@@ -2,7 +2,7 @@
 
 A lightweight macOS menu bar app that displays real-time CPU, GPU, storage, and battery temperatures from the SMC (System Management Controller). Supports fan speed monitoring and manual fan control on Macs with fans.
 
-![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![arm64](https://img.shields.io/badge/arch-arm64-lightgrey)
+![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![arm64](https://img.shields.io/badge/arch-arm64-lightgrey) [![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-orange?logo=anthropic)](https://claude.ai)
 
 ![Thermal Monitor popover](screenshots/popover.png)
 
