@@ -4,6 +4,8 @@ A lightweight macOS menu bar app that displays real-time CPU, GPU, storage, and 
 
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![arm64](https://img.shields.io/badge/arch-arm64-lightgrey)
 
+![Thermal Monitor popover](screenshots/popover.png)
+
 ## Features
 
 - Live temperature readings for CPU (P-cores + E-cores), GPU, storage, battery, and thermal sensors
