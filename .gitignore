@@ -1,0 +1,25 @@
+# Build outputs
+build/
+.build/
+
+# DMG / release artifacts (publish via GitHub Releases instead)
+*.dmg
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode / Swift
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+.swiftpm/
+
+# VS Code
+.vscode/
+
+# Editor backups
+*~
+*.orig

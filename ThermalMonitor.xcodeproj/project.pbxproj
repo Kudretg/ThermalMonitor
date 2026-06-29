@@ -1,0 +1,266 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BB8AF51C29E8F1A200000020 /* ThermalMonitorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8AF51C29E8F1A200000010 /* ThermalMonitorApp.swift */; };
+		BB8AF51C29E8F1A200000021 /* SMCReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8AF51C29E8F1A200000011 /* SMCReader.swift */; };
+		BB8AF51C29E8F1A200000022 /* ThermalModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8AF51C29E8F1A200000012 /* ThermalModel.swift */; };
+		BB8AF51C29E8F1A200000023 /* PopoverContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8AF51C29E8F1A200000013 /* PopoverContentView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		BB8AF51C29E8F1A200000010 /* ThermalMonitorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalMonitorApp.swift; sourceTree = "<group>"; };
+		BB8AF51C29E8F1A200000011 /* SMCReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMCReader.swift; sourceTree = "<group>"; };
+		BB8AF51C29E8F1A200000012 /* ThermalModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThermalModel.swift; sourceTree = "<group>"; };
+		BB8AF51C29E8F1A200000013 /* PopoverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverContentView.swift; sourceTree = "<group>"; };
+		BB8AF51C29E8F1A200000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Resources/Info.plist; sourceTree = "<group>"; };
+		BB8AF51C29E8F1A200000015 /* ThermalMonitor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ThermalMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BB8AF51C29E8F1A20000000B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		BB8AF51C29E8F1A20000000C /* ThermalMonitor */ = {
+			isa = PBXGroup;
+			children = (
+				BB8AF51C29E8F1A20000000D /* Sources */,
+				BB8AF51C29E8F1A200000030 /* Resources */,
+				BB8AF51C29E8F1A200000031 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BB8AF51C29E8F1A20000000D /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				BB8AF51C29E8F1A200000010 /* ThermalMonitorApp.swift */,
+				BB8AF51C29E8F1A200000011 /* SMCReader.swift */,
+				BB8AF51C29E8F1A200000012 /* ThermalModel.swift */,
+				BB8AF51C29E8F1A200000013 /* PopoverContentView.swift */,
+			);
+			name = Sources;
+			path = Sources/ThermalMonitor;
+			sourceTree = "<group>";
+		};
+		BB8AF51C29E8F1A200000030 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				BB8AF51C29E8F1A200000014 /* Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		BB8AF51C29E8F1A200000031 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BB8AF51C29E8F1A200000015 /* ThermalMonitor.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BB8AF51C29E8F1A200000005 /* ThermalMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB8AF51C29E8F1A200000006 /* Build configuration list for PBXNativeTarget "ThermalMonitor" */;
+			buildPhases = (
+				BB8AF51C29E8F1A200000009 /* Sources */,
+				BB8AF51C29E8F1A20000000A /* Resources */,
+				BB8AF51C29E8F1A20000000B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ThermalMonitor;
+			productName = ThermalMonitor;
+			productReference = BB8AF51C29E8F1A200000015 /* ThermalMonitor.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BB8AF51C29E8F1A200000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1520;
+				LastUpgradeCheck = 1520;
+				TargetAttributes = {
+					BB8AF51C29E8F1A200000005 = {
+						CreatedOnToolsVersion = 15.2;
+					};
+				};
+			};
+			buildConfigurationList = BB8AF51C29E8F1A200000002 /* Build configuration list for PBXProject "ThermalMonitor" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = BB8AF51C29E8F1A20000000C;
+			productRefGroup = BB8AF51C29E8F1A200000031 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BB8AF51C29E8F1A200000005 /* ThermalMonitor */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BB8AF51C29E8F1A20000000A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BB8AF51C29E8F1A200000009 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB8AF51C29E8F1A200000020 /* ThermalMonitorApp.swift in Sources */,
+				BB8AF51C29E8F1A200000021 /* SMCReader.swift in Sources */,
+				BB8AF51C29E8F1A200000022 /* ThermalModel.swift in Sources */,
+				BB8AF51C29E8F1A200000023 /* PopoverContentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BB8AF51C29E8F1A200000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		BB8AF51C29E8F1A200000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		BB8AF51C29E8F1A200000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.user.ThermalMonitor";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+			};
+			name = Debug;
+		};
+		BB8AF51C29E8F1A200000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.user.ThermalMonitor";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BB8AF51C29E8F1A200000002 /* Build configuration list for PBXProject "ThermalMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB8AF51C29E8F1A200000003 /* Debug */,
+				BB8AF51C29E8F1A200000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB8AF51C29E8F1A200000006 /* Build configuration list for PBXNativeTarget "ThermalMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB8AF51C29E8F1A200000007 /* Debug */,
+				BB8AF51C29E8F1A200000008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = BB8AF51C29E8F1A200000001 /* Project object */;
+}
