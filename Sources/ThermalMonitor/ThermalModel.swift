@@ -54,9 +54,23 @@ struct FanData: Identifiable {
     var name: String { "Fan \(index + 1)" }
     var rpm: String { String(format: "%.0f RPM", current) }
 
+    // Manual control (and the slider's min...max range) needs a sane range from the SMC.
+    var hasValidRange: Bool { min >= 0 && max > min }
+
+    func clamped(_ rpm: Double) -> Double { Swift.min(Swift.max(rpm, min), max) }
+
     var fraction: Double {
         guard max > min, current >= 10 else { return 0 }
         return Swift.min(Swift.max((current - min) / (max - min), 0), 1)
+    }
+}
+
+// nil → value and value → nil count as changes; nil → nil does not.
+private func readingChanged(_ new: Double?, _ old: Double?, threshold: Double) -> Bool {
+    switch (new, old) {
+    case (nil, nil):            return false
+    case let (n?, o?):          return abs(n - o) > threshold
+    default:                    return true
     }
 }
 
@@ -133,6 +147,8 @@ class ThermalModel: ObservableObject {
     @Published var primaryTemp: Double? = nil
     @Published var lastUpdated = Date()
     @Published var fanControlAvailable: Bool = SMCReader.helperAvailable
+    @Published var fanControlError: String? = nil
+    @Published private(set) var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     func installFanHelper(completion: @escaping (Bool, String?) -> Void) {
         SMCReader.installHelper { [weak self] success, error in
@@ -142,28 +158,48 @@ class ThermalModel: ObservableObject {
     }
 
     private let smc = SMCReader()
+    // Every SMC access — IOKit reads and helper writes — runs on this serial queue.
+    // SMCReader's key cache isn't thread-safe, and ordering writes before later reads
+    // keeps the polled fan mode consistent with what we just set.
+    private let smcQueue = DispatchQueue(label: "ThermalMonitor.smc", qos: .utility)
     private var pollingSource: DispatchSourceTimer?
+    private var wakeObserver: NSObjectProtocol?
+    private var refreshInFlight = false
+    // Fans we've asked to go manual this session, including writes still queued, so
+    // restoreAutomaticFans() covers them even before the UI state catches up.
+    private var manualRequested = Set<Int>()
 
     init() {
-        smc.open()
         sensors = sensorCatalogue.map { TemperatureSensor(name: $0.0, key: $0.1, category: $0.2) }
+        let smcRef = smc
+        smcQueue.async { smcRef.open() }
         loadFans()
         startPolling()
     }
 
     deinit {
         pollingSource?.cancel()
-        NotificationCenter.default.removeObserver(self)
-        smc.close()
+        if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        let smcRef = smc
+        smcQueue.async { smcRef.close() }
     }
 
     private func loadFans() {
-        let count = smc.fanCount()
-        fans = (0..<count).map { i in
-            var f = FanData(index: i)
-            f.min = smc.fanMinSpeed(index: i) ?? 1200
-            f.max = smc.fanMaxSpeed(index: i) ?? 6800
-            return f
+        let smcRef = smc
+        smcQueue.async { [weak self] in
+            let count = smcRef.fanCount()
+            let loaded: [FanData] = (0..<count).map { i in
+                var f = FanData(index: i)
+                f.min = smcRef.fanMinSpeed(index: i) ?? 1200
+                f.max = smcRef.fanMaxSpeed(index: i) ?? 6800
+                f.current = smcRef.fanCurrentSpeed(index: i) ?? 0
+                // Pick up a manual mode left behind by a previous run or crash.
+                f.isManual = smcRef.fanIsManual(index: i) ?? false
+                return f
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.fans = loaded
+            }
         }
     }
 
@@ -172,92 +208,148 @@ class ThermalModel: ObservableObject {
 
         // DispatchSourceTimer on the main queue: fires in the main-actor context
         // so reading @MainActor properties is safe. SMC reads are dispatched out
-        // to a background queue inside refresh().
+        // to smcQueue inside refresh().
         let source = DispatchSource.makeTimerSource(queue: .main)
         source.schedule(deadline: .now() + 1, repeating: 1.0, leeway: .milliseconds(100))
         source.setEventHandler { [weak self] in self?.refresh() }
         source.resume()
         pollingSource = source
 
-        // Immediate refresh on wake from sleep
-        NotificationCenter.default.addObserver(
+        // Immediate refresh on wake from sleep. NSWorkspace posts this on its own
+        // notification center, not NotificationCenter.default.
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil, queue: .main
         ) { [weak self] _ in DispatchQueue.main.async { self?.refresh() } }
     }
 
     func refresh() {
-        // Capture snapshots on the main actor, then hand off to a background queue
-        // for the actual IOKit SMC reads. Only dispatch a UI update when something changed.
+        // One read at a time: overlapping reads (timer + button + wake) could finish
+        // out of order and publish stale values over newer ones.
+        guard !refreshInFlight else { return }
+        refreshInFlight = true
+
+        // Capture snapshots on the main actor, then hand off to smcQueue for the
+        // actual IOKit SMC reads. Only publish when something changed.
         let sensorSnapshot = sensors
         let fanSnapshot    = fans
         let smcRef         = smc
 
-        DispatchQueue.global(qos: .utility).async { [weak self] in
+        smcQueue.async { [weak self] in
             var newSensors = sensorSnapshot
-            var newFans    = fanSnapshot
             var anyChanged = false
 
             for i in newSensors.indices {
                 let v = smcRef.temperature(key: newSensors[i].key)
-                if abs((v ?? 0) - (newSensors[i].value ?? -999)) > 0.4 { anyChanged = true }
+                if readingChanged(v, newSensors[i].value, threshold: 0.4) { anyChanged = true }
                 newSensors[i].value = v
             }
-            for i in newFans.indices {
-                let spd = smcRef.fanCurrentSpeed(index: newFans[i].index) ?? 0
-                if abs(spd - newFans[i].current) > 50 { anyChanged = true }
-                newFans[i].current = spd
-            }
 
-            guard anyChanged else { return }
+            var fanReadings: [(index: Int, current: Double, isManual: Bool?)] = []
+            for fan in fanSnapshot {
+                let spd = smcRef.fanCurrentSpeed(index: fan.index) ?? 0
+                let manual = smcRef.fanIsManual(index: fan.index)
+                if abs(spd - fan.current) > 50 { anyChanged = true }
+                if let manual, manual != fan.isManual { anyChanged = true }
+                fanReadings.append((fan.index, spd, manual))
+            }
 
             let primary = newSensors.first(where: { $0.key == "Tp01" })?.value
                 ?? newSensors.first(where: { $0.category == .cpu && $0.value != nil })?.value
 
             DispatchQueue.main.async { [weak self] in
-                self?.sensors     = newSensors
-                self?.fans        = newFans
-                self?.primaryTemp = primary
-                self?.lastUpdated = Date()
+                guard let self else { return }
+                self.refreshInFlight = false
+                guard anyChanged else { return }
+
+                self.sensors = newSensors
+                // Merge only the polled fields: target may have changed on the main
+                // actor while this read was running.
+                for r in fanReadings {
+                    guard let i = self.fans.firstIndex(where: { $0.index == r.index }) else { continue }
+                    self.fans[i].current = r.current
+                    if let manual = r.isManual {
+                        self.fans[i].isManual = manual
+                        if !manual { self.fans[i].target = nil }
+                    }
+                }
+                self.primaryTemp = primary
+                self.lastUpdated = Date()
             }
         }
     }
 
+    // MARK: - Fan control
+
     func setFanManual(index: Int, speed: Double) {
-        smc.setFanManual(index: index, speed: speed)
-        if let i = fans.firstIndex(where: { $0.index == index }) {
-            fans[i].isManual = true
-            fans[i].target = speed
-        }
-    }
-
-    // MARK: - Launch at Login
-
-    var launchAtLogin: Bool {
-        get { SMAppService.mainApp.status == .enabled }
-        set {
-            do {
-                if newValue { try SMAppService.mainApp.register() }
-                else        { try SMAppService.mainApp.unregister() }
-            } catch {
-                print("Login item: \(error.localizedDescription)")
+        guard let fan = fans.first(where: { $0.index == index }), fan.hasValidRange else { return }
+        let rpm = fan.clamped(speed)
+        manualRequested.insert(index)
+        let smcRef = smc
+        // The helper is a separate process; never wait on it from the main thread.
+        smcQueue.async(qos: .userInitiated) { [weak self] in
+            let ok = smcRef.setFanManual(index: index, speed: rpm)
+            DispatchQueue.main.async { [weak self] in
+                self?.applyFanWrite(index: index, ok: ok, manual: true, target: rpm)
             }
         }
     }
 
     func setFanAuto(index: Int) {
-        smc.setFanAuto(index: index)
+        manualRequested.remove(index)
+        let smcRef = smc
+        smcQueue.async(qos: .userInitiated) { [weak self] in
+            let ok = smcRef.setFanAuto(index: index)
+            DispatchQueue.main.async { [weak self] in
+                self?.applyFanWrite(index: index, ok: ok, manual: false, target: nil)
+            }
+        }
+    }
+
+    private func applyFanWrite(index: Int, ok: Bool, manual: Bool, target: Double?) {
+        guard ok else {
+            fanControlAvailable = SMCReader.helperAvailable
+            fanControlError = "Couldn't change Fan \(index + 1)."
+                + (fanControlAvailable ? "" : " Fan control needs to be reinstalled.")
+            return
+        }
+        fanControlError = nil
         if let i = fans.firstIndex(where: { $0.index == index }) {
-            fans[i].isManual = false
-            fans[i].target = nil
+            fans[i].isManual = manual
+            fans[i].target = target
         }
     }
 
     func maxAllFans() {
-        for fan in fans { setFanManual(index: fan.index, speed: fan.max) }
+        for fan in fans where fan.hasValidRange { setFanManual(index: fan.index, speed: fan.max) }
     }
 
     func resetAllFans() {
         for fan in fans { setFanAuto(index: fan.index) }
+    }
+
+    // Called at quit: hand every fan we (or a previous run) left in manual mode back
+    // to the SMC. Synchronous so the writes finish before the process exits; queued
+    // writes ahead of it on smcQueue run first.
+    func restoreAutomaticFans() {
+        let indices = manualRequested.union(fans.filter(\.isManual).map(\.index))
+        guard !indices.isEmpty else { return }
+        let smcRef = smc
+        smcQueue.sync {
+            for i in indices.sorted() { smcRef.setFanAuto(index: i) }
+        }
+    }
+
+    // MARK: - Launch at Login
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled { try SMAppService.mainApp.register() }
+            else       { try SMAppService.mainApp.unregister() }
+        } catch {
+            print("Login item: \(error.localizedDescription)")
+        }
+        // Re-read so the toggle reflects what actually happened.
+        launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 }

@@ -36,11 +36,21 @@ make install
 
 # Build + install + create DMG in ~/Downloads
 make release
+
+# Sign with a Developer ID, notarize and staple the DMG (needed for other Macs to open it)
+make notarize SIGN_ID="Developer ID Application: Your Name (TEAMID)" NOTARY_PROFILE=<notarytool profile>
 ```
+
+By default builds are ad-hoc signed, which is fine on your own Mac but blocked by Gatekeeper elsewhere.
 
 ## Fan Control Setup
 
-Fan writes require root. On first use, click **Enable Fan Control** in the popover — it runs a one-time install that copies a small setuid-root helper (`smc_write`) to `/usr/local/bin/`. You'll be prompted for your password once.
+Fan writes require root. On first use, click **Enable Fan Control** in the popover. This runs a one-time install that copies a small setuid-root helper (`smc_write`) to `/Library/PrivilegedHelperTools/`. You'll be prompted for your password once.
+
+The helper is deliberately narrow:
+- Only users in the `admin` group can run it (mode `4750`, `root:admin`).
+- It only writes the fan mode (`F<n>Md`, 0 or 1) and fan target (`F<n>Tg`) keys, and clamps targets to each fan's SMC min/max.
+- The installer checks that the binary it copies matches the one in the app bundle and removes the older, unrestricted `/usr/local/bin/smc_write` if it is present.
 
 To install it manually from the terminal:
 
@@ -48,7 +58,7 @@ To install it manually from the terminal:
 make install-helper   # requires sudo
 ```
 
-To reset all fans back to automatic control, click **Auto** in the popover or quit the app.
+To reset all fans back to automatic control, click **Auto** in the popover or quit the app (including via `kill`/`pkill`). A force-quit (`kill -9`) or crash can't run cleanup; the app shows any fan left in manual mode on its next launch.
 
 ## Project Structure
 
@@ -60,7 +70,7 @@ Sources/ThermalMonitor/
   PopoverContentView.swift  — Full popover UI (fans, sensors, footer)
 
 helpers/
-  smc_write.swift           — Privileged CLI helper compiled separately, installed setuid-root
+  smc_write.swift           — Privileged fan-only CLI helper, compiled separately, installed setuid-root
 
 Resources/
   Info.plist                — App bundle metadata

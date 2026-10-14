@@ -5,9 +5,19 @@ APP="ThermalMonitor"
 VERSION="1.0"
 VOL="Thermal Monitor"
 DMG_FINAL="$HOME/Downloads/${APP}-${VERSION}.dmg"
-DMG_TEMP="/tmp/${APP}-rw.dmg"
-STAGING="/tmp/${APP}-staging"
-BG_PNG="/tmp/${APP}-bg.png"
+
+# Private scratch dir (not fixed /tmp names another user could pre-create or symlink).
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/${APP}-dmg.XXXXXX")"
+DMG_TEMP="$WORK/${APP}-rw.dmg"
+STAGING="$WORK/staging"
+BG_PNG="$WORK/bg.png"
+MOUNT_PATH=""
+
+cleanup() {
+    if [ -n "$MOUNT_PATH" ]; then hdiutil detach "$MOUNT_PATH" -quiet 2>/dev/null || true; fi
+    rm -rf "$WORK"
+}
+trap cleanup EXIT
 
 # ── 1. Create background image ───────────────────────────────────────────────
 echo "→ Generating background image..."
@@ -79,7 +89,7 @@ PYEOF
 
 # ── 2. Stage files ────────────────────────────────────────────────────────────
 echo "→ Staging files..."
-rm -rf "$STAGING" && mkdir -p "$STAGING"
+mkdir -p "$STAGING"
 cp -r "build/${APP}.app" "$STAGING/${APP}.app"
 ln -s /Applications "$STAGING/Applications"
 
@@ -89,7 +99,6 @@ cp "$BG_PNG" "$STAGING/.background/bg.png"
 
 # ── 3. Create writable DMG ────────────────────────────────────────────────────
 echo "→ Creating disk image..."
-rm -f "$DMG_TEMP"
 hdiutil create \
     -srcfolder "$STAGING" \
     -volname "$VOL" \
@@ -150,6 +159,7 @@ sync
 # ── 6. Finalise ───────────────────────────────────────────────────────────────
 echo "→ Unmounting..."
 hdiutil detach "$MOUNT_PATH" -quiet
+MOUNT_PATH=""
 sync
 
 echo "→ Converting to compressed read-only DMG..."
@@ -158,10 +168,6 @@ hdiutil convert "$DMG_TEMP" \
     -format UDZO \
     -imagekey zlib-level=9 \
     -o "$DMG_FINAL" >/dev/null
-
-echo "→ Cleaning up..."
-rm -f "$DMG_TEMP" "$BG_PNG"
-rm -rf "$STAGING"
 
 echo "→ Setting DMG file icon..."
 ICNS="$(pwd)/Resources/AppIcon.icns"
