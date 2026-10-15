@@ -69,10 +69,14 @@ private struct HeaderBar: View {
 private struct FooterBar: View {
     @EnvironmentObject var model: ThermalModel
 
-    private var timeString: String {
+    private static let timeFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "HH:mm:ss"
-        return f.string(from: model.lastUpdated)
+        return f
+    }()
+
+    private var timeString: String {
+        Self.timeFormatter.string(from: model.lastUpdated)
     }
 
     var body: some View {
@@ -84,7 +88,7 @@ private struct FooterBar: View {
             Spacer()
             Toggle("Launch at Login", isOn: Binding(
                 get: { model.launchAtLogin },
-                set: { model.launchAtLogin = $0 }
+                set: { model.setLaunchAtLogin($0) }
             ))
             .toggleStyle(.checkbox)
             .font(.system(size: 10))
@@ -173,6 +177,14 @@ private struct FanSection: View {
                 VStack(spacing: 0) {
                     ForEach($model.fans) { $fan in
                         FanRow(fan: $fan)
+                    }
+                    if let err = model.fanControlError {
+                        Text(err)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.red)
+                            .lineLimit(2)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
                     }
                     if !model.fanControlAvailable {
                         FanControlSetupBanner(installing: $installing, installError: $installError)
@@ -346,7 +358,7 @@ private struct FanRow: View {
                     get: { fan.isManual },
                     set: { manual in
                         if manual {
-                            sliderValue = fan.current > 100 ? fan.current : fan.min
+                            sliderValue = fan.clamped(fan.current > 100 ? fan.current : fan.min)
                             model.setFanManual(index: fan.index, speed: sliderValue)
                         } else {
                             model.setFanAuto(index: fan.index)
@@ -356,7 +368,7 @@ private struct FanRow: View {
                 .toggleStyle(.switch)
                 .controlSize(.mini)
                 .font(.system(size: 11))
-                .disabled(!model.fanControlAvailable)
+                .disabled(!model.fanControlAvailable || !fan.hasValidRange)
                 Spacer()
                 if fan.isManual {
                     Text(String(format: "%.0f RPM", sliderValue))
@@ -369,7 +381,8 @@ private struct FanRow: View {
                 }
             }
 
-            if fan.isManual {
+            // `min...max` traps when min > max, so only build the slider for a valid range.
+            if fan.isManual && fan.hasValidRange {
                 HStack(spacing: 6) {
                     Text(String(format: "%.0f", fan.min))
                         .font(.system(size: 9))
@@ -384,7 +397,7 @@ private struct FanRow: View {
                         .foregroundStyle(.tertiary)
                 }
                 .onAppear {
-                    sliderValue = fan.target ?? max(fan.current, fan.min)
+                    sliderValue = fan.clamped(fan.target ?? fan.current)
                 }
             }
         }

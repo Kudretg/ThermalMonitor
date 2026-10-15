@@ -1,18 +1,46 @@
 import SwiftUI
+import AppKit
 
 @main
 struct ThermalMonitorApp: App {
-    @StateObject private var model = ThermalModel()
+    // The delegate owns the model so it can restore fans at quit.
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
         MenuBarExtra {
             PopoverContentView()
-                .environmentObject(model)
+                .environmentObject(appDelegate.model)
         } label: {
             MenuBarLabel()
-                .environmentObject(model)
+                .environmentObject(appDelegate.model)
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+// MARK: - App delegate
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    // Lazy so it's created on first use from the main actor, not in NSObject's init.
+    private(set) lazy var model = ThermalModel()
+    private var signalSources: [DispatchSourceSignal] = []
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // SIGTERM/SIGINT (`kill`, `pkill`, `make run`) would otherwise exit without
+        // applicationWillTerminate and leave fans in manual mode. Route them through
+        // a normal quit instead.
+        for sig in [SIGTERM, SIGINT] {
+            signal(sig, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+            source.setEventHandler { NSApplication.shared.terminate(nil) }
+            source.resume()
+            signalSources.append(source)
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        model.restoreAutomaticFans()
     }
 }
 
